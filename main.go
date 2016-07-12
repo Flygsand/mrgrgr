@@ -73,6 +73,8 @@ func doMain(c *cli.Context) {
 			log.Fatal(err)
 		}
 
+		log.Infof("refreshed %d key(s)", len(pkeys))
+
 		<-tick
 	}
 }
