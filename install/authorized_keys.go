@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"syscall"
 )
 
 type authorizedKeysInstaller struct {
@@ -28,6 +29,11 @@ func (i *authorizedKeysInstaller) Install(pkeys []keys.PublicKey) error {
 	defer os.Remove(f.Name())
 	defer f.Close()
 
+	err = copyOwnership(i.Path, f)
+	if err != nil {
+		return err
+	}
+
 	err = writeKeys(f, pkeys)
 	if err != nil {
 		return err
@@ -47,4 +53,18 @@ func writeKeys(f *os.File, pkeys []keys.PublicKey) error {
 	}
 
 	return w.Flush()
+}
+
+func copyOwnership(srcPath string, dest *os.File) error {
+	fi, err := os.Stat(srcPath)
+	if err != nil {
+		return err
+	}
+
+	stat := fi.Sys().(*syscall.Stat_t)
+	if stat == nil {
+		return fmt.Errorf("could not stat %s (got nil)", srcPath)
+	}
+
+	return dest.Chown(int(stat.Uid), int(stat.Gid))
 }
